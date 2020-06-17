@@ -35,6 +35,7 @@ int main (int argc, char *arg[]){
 	cout<<"Header's rows: "<<headerRows<<endl;
 	cout<<"Label columns: "<<labelColumns<<endl;
 	cout<<"Epsilon: "<<epsilon<<endl;
+	float borderDistance=sqrt(2-2*epsilon);
 	cout<<"k:"<<k<<endl<<endl;
 	cout<<"Reading file: "<<filePath<<endl;
 	vector<vector<string>> dataRaw=readData(filePath,headerRows,delimiter);
@@ -52,18 +53,22 @@ int main (int argc, char *arg[]){
 	 */
 
 	float data[dataNum][attributeSize+3];
+	float dataOld[dataNum][attributeSize+3];
 	for(int i=0; i<dataNum; i++){
 		float dataVector[attributeSize];
 		for(int ii=0; ii<attributeSize; ii++){
 			dataVector[ii]=stof(dataRaw[i][ii+labelColumns]);
 			data[i][ii]=dataVector[ii];
+			dataOld[i][ii]=dataVector[ii];
 		}
 		data[i][attributeSize]=vectorLength(dataVector,attributeSize);
 		data[i][attributeSize+1]=-1; //Initialize claster ID value with -1
 		data[i][attributeSize+2]=i; //Last cell -> original id
+		dataOld[i][attributeSize]=vectorLength(dataVector,attributeSize);
+		dataOld[i][attributeSize+1]=-1; //Initialize claster ID value with -1
+		dataOld[i][attributeSize+2]=i; //Last cell -> original id
 	}
 
-	/**
 	cout<<"Preparing data, normalization and sorting"<<endl;
 	//Normalize vector and calculate angle from vector [1,0,0,...,0]
 	for(int i=0; i<dataNum; i++){
@@ -71,16 +76,15 @@ int main (int argc, char *arg[]){
 			data[i][ii]=data[i][ii]/data[i][attributeSize];
 		}
 
-		//Calculate angle from arbitrary vector, which will be the indicator of potential close vectors
-		data[i][attributeSize]=acos(data[i][0]);
-
-		//Commentary to this method (because it's a bigger thinking wrapped into one line of code)
-		//First we calculate the scalar product of two vectors, but because the second has only one nonzero part and it's equal 1,
-		//it will be equal simply to respective part of first vector.
-		//a x b = |a| |b| cos(alpha), but because they're both normalized, cos(alpha)=a x b = a[0]
-		//Than the angle in radians is calculated using acos
+		//Calculate distance from arbitrary choosen point (1,0,0,...)
+		float sum=0;
+		sum=(data[i][0]-1)*(data[i][0]-1);
+		for(int ii=1; ii<attributeSize; ii++){
+			sum+=data[i][ii]*data[i][ii];
+		}
+		data[i][attributeSize]=sqrt(sum);
 	}
-	//At the end -> 2D array of vectors + angle from [1,0,0,...,0] + claster ID + original data ID*/
+	//At the end -> 2D array of vectors + angle from [1,0,0,...,0] + claster ID + original data ID
 
 	/**
 	 * Sorting data by angle from [1,0,0,...,0] vector
@@ -92,7 +96,7 @@ int main (int argc, char *arg[]){
 		dataArray[i]={data[i],data[i][attributeSize]};
 	}
 	n = sizeof(dataArray)/sizeof(dataArray[0]);
-	sort(dataArray, dataArray+n, compareLength);
+	sort(dataArray, dataArray+n, compareDistance);
 
 	//Writing sorted data to tmp array
 	float dataTmpArray[dataNum][attributeSize+3];
@@ -136,8 +140,6 @@ int main (int argc, char *arg[]){
 	//First main loop -> searching for neighbors and making neighborMatrix
 	for (int i=0; i<dataNum; i++){
 		//Calculate boundary values for potential close vectors
-		float minBorder=data[i][attributeSize]*epsilon;
-		float maxBorder=data[i][attributeSize]/epsilon;
 
 		/**
 		 * Analyzing cosine values of potential close vectors
@@ -146,44 +148,28 @@ int main (int argc, char *arg[]){
 
 		vector<objectInfo> closeVectors; //IDs of close vectors
 		for (int ii=i-1;ii>=0;ii--){
-			if(data[ii][attributeSize]>=minBorder){//If potential close vector
-				//Calculate cosine value
-				float product=0;
+			if(data[ii][attributeSize]>=data[i][attributeSize]-borderDistance){//If potential close vector
+				float distance=0;
 				for (int iii=0;iii<attributeSize;iii++){
-					product+=data[i][iii]*data[ii][iii];
+					float a=data[i][iii]-data[ii][iii];
+					distance+=a*a;
 				}
-				float cosineVal=product/(data[i][attributeSize]*data[ii][attributeSize]);
-				if (cosineVal>=epsilon){//Check if object is close enough
-					float distance=0;
-					for (int iii=0;iii<attributeSize;iii++){
-						float a=data[i][iii]-data[ii][iii];
-						distance+=a*a;
-					}
-					objectInfo object; object.id=ii; object.euclideanDistance=sqrt(distance);
-					closeVectors.push_back(object);
-				}
+				objectInfo object; object.id=ii; object.euclideanDistance=sqrt(distance);
+				closeVectors.push_back(object);
 			}
 			else{//Break loop if we exceed boundary
 				break;
 			}
 		}
 		for (int ii=i+1;ii<dataNum;ii++){
-			if(data[ii][attributeSize]<=maxBorder){//If potential close vector
-				//Calculate cosine value
-				float product=0;
+			if(data[ii][attributeSize]<=data[i][attributeSize]+borderDistance){//If potential close vector
+				float distance=0;
 				for (int iii=0;iii<attributeSize;iii++){
-					product+=data[i][iii]*data[ii][iii];
+					float a=data[i][iii]-data[ii][iii];
+					distance+=a*a;
 				}
-				float cosineVal=product/(data[i][attributeSize]*data[ii][attributeSize]);
-				if (cosineVal>=epsilon){//Check if object is close enough
-					float distance=0;
-					for (int iii=0;iii<attributeSize;iii++){
-						float a=data[i][iii]-data[ii][iii];
-						distance+=a*a;
-					}
-					objectInfo object; object.id=ii; object.euclideanDistance=sqrt(distance);
-					closeVectors.push_back(object);
-				}
+				objectInfo object; object.id=ii; object.euclideanDistance=sqrt(distance);
+				closeVectors.push_back(object);
 			}
 			else{//Break loop if we exceed boundary
 				break;
@@ -214,6 +200,13 @@ int main (int argc, char *arg[]){
 				break;
 		}
 	}
+
+	/**for(int i=0; i<dataNum; i++){
+		for(int ii=0; ii<dataNum; ii++){
+			cout<<neighborMatrix[(int) data[i][attributeSize+2]][(int) data[ii][attributeSize+2]];
+		}
+		cout<<endl;
+	}**/
 
 	cout<<"Neighbor matrix completed"<<endl;
 	end = std::chrono::system_clock::now();
@@ -308,7 +301,7 @@ int main (int argc, char *arg[]){
 		idAndCluster[i].length=data[i][attributeSize+1];
 	}
 	n = sizeof(idAndCluster)/sizeof(idAndCluster[0]);
-	sort(idAndCluster,idAndCluster+n,compareLength);
+	sort(idAndCluster,idAndCluster+n,compareDistance);
 
 	//Writing sorted data to tmp array
 	vector<float*> dataTmp2Array; //Cause it's to big array to do it the "normal way"
@@ -342,7 +335,7 @@ int main (int argc, char *arg[]){
 	for(int i = 0; i<dataNum; i++){
 		dataTmpSave[i] = new float[attributeSize+2];
 	    for (int ii=0; ii<attributeSize+1; ii++){
-	    	dataTmpSave[i][ii]=data[i][ii];
+	    	dataTmpSave[i][ii]=dataOld[(int) data[i][attributeSize+2]][ii];
 	    }
 	    dataTmpSave[i][attributeSize]=data[i][attributeSize];
 	    dataTmpSave[i][attributeSize+1]=data[i][attributeSize+1];
