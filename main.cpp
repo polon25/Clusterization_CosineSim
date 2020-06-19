@@ -113,7 +113,7 @@ int main (int argc, char *arg[]){
 
 	auto end = std::chrono::system_clock::now();
 	chrono::duration<double> elapsed_seconds = end-start;
-	cout<<"Elapsed time: " << elapsed_seconds.count() << "s\n"<<endl;
+	cout<<"Elapsed time: " << 1000*elapsed_seconds.count() << "ms\n"<<endl;
 
 	cout<<"Create neighbor matrix"<<endl;
 
@@ -209,7 +209,7 @@ int main (int argc, char *arg[]){
 	cout<<"Neighbor matrix completed"<<endl;
 	end = std::chrono::system_clock::now();
 	elapsed_seconds = end-start;
-	cout<<"Elapsed time: " << elapsed_seconds.count() << "s\n";
+	cout<<"Elapsed time: " << 1000*elapsed_seconds.count() << "ms\n";
 	cout<<endl;
 
 	//Calculate ndf and check the object class
@@ -230,11 +230,8 @@ int main (int argc, char *arg[]){
 			objectClassTable[i]=CORE;
 		else if ((kn>=k) & (ndf<1))
 			objectClassTable[i]=BORDER;
-		else{
+		else
 			objectClassTable[i]=NOISE;
-			data[i][attributeSize]=0; //0 time counter
-			cout<<'('<<data[i][0]<<','<<data[i][1]<<')'<<endl;
-		}
 	}
 
 	int clasterCount=0; //"When it was clusterized" counter
@@ -286,7 +283,7 @@ int main (int argc, char *arg[]){
 	cout<<"Clasterization Complete"<<endl;
 	end = std::chrono::system_clock::now();
 	elapsed_seconds = end-start;
-	cout<<"Elapsed time: " << elapsed_seconds.count() << "s\n";
+	cout<<"Elapsed time: " << 1000*elapsed_seconds.count() << "ms\n";
 	cout<<endl;
 
 	/*************************
@@ -347,7 +344,7 @@ int main (int argc, char *arg[]){
 	end = std::chrono::system_clock::now();
 	elapsed_seconds = end-start;
 
-	cout<<"Elapsed time [all]: " << elapsed_seconds.count() << "s\n";
+	cout<<"Elapsed time [all]: " << 1000*elapsed_seconds.count() << "ms\n";
 
 	return 0;
 }
