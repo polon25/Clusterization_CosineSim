@@ -2,7 +2,7 @@
 // Name        : main.cpp
 // Author      : Jacek Pi³ka
 // Description : DAMI Project -> clusterization using cosine measure
-// Arguments: filePath, number of header rows, number of columns with labels, delimiter, epsilon, k, filePathOut
+// Arguments: filePath, number of header rows, delimiter, epsilon, k, filePathOut
 //============================================================================
 
 #include "data.h"
@@ -21,11 +21,10 @@ int main (int argc, char *arg[]){
 	//Arguments
 	string filePath=arg[1];
 	int headerRows=atoi(arg[2]); //Number of header lines
-	int labelColumns=atoi(arg[3]); //Number of columns with labels
-	char delimiter=*arg[4]; //Delimiter char
-	float epsilon=atof(arg[5]); //Epsilon value
-	int k=atoi(arg[6]); //k neighbors
-	string filePathOut=arg[7];
+	char delimiter=*arg[3]; //Delimiter char
+	float epsilon=atof(arg[4]); //Epsilon value
+	int k=atoi(arg[5]); //k neighbors
+	string filePathOut=arg[6];
 
 	/**
 	 * Importing data from file
@@ -33,14 +32,13 @@ int main (int argc, char *arg[]){
 
 	cout<<"Parameters:"<<endl;
 	cout<<"Header's rows: "<<headerRows<<endl;
-	cout<<"Label columns: "<<labelColumns<<endl;
 	cout<<"Epsilon: "<<epsilon<<endl;
 	float borderDistance=sqrt(2-2*epsilon);
 	cout<<"k:"<<k<<endl<<endl;
 	cout<<"Reading file: "<<filePath<<endl;
 	vector<vector<string>> dataRaw=readData(filePath,headerRows,delimiter);
 	vector<string> row=dataRaw[0];
-	int attributeSize=row.size()-labelColumns;
+	int attributeSize=row.size();
 	int dataNum=dataRaw.size();
 	cout<<"Data read properly"<<endl;
 	cout<<"Objects in data set: "<<dataNum<<endl<<endl;
@@ -57,7 +55,7 @@ int main (int argc, char *arg[]){
 	for(int i=0; i<dataNum; i++){
 		float dataVector[attributeSize];
 		for(int ii=0; ii<attributeSize; ii++){
-			dataVector[ii]=stof(dataRaw[i][ii+labelColumns]);
+			dataVector[ii]=stof(dataRaw[i][ii]);
 			data[i][ii]=dataVector[ii];
 			dataOld[i][ii]=dataVector[ii];
 		}
@@ -72,7 +70,7 @@ int main (int argc, char *arg[]){
 	cout<<"Preparing data, normalization and sorting"<<endl;
 	//Normalize vector and calculate angle from vector [1,0,0,...,0]
 	for(int i=0; i<dataNum; i++){
-		for(int ii=0; ii<attributeSize; ii++){
+		for(int ii=0; ii<attributeSize+1; ii++){
 			data[i][ii]=data[i][ii]/data[i][attributeSize];
 		}
 
@@ -188,22 +186,22 @@ int main (int argc, char *arg[]){
 		//If less neighbors then k
 		int kTmp=(k<ni)? k : ni;
 
-		int kCounter=0;
-
 		//Add k+ neighbors to neighborMatrix
 		for(int ii=0; ii<ni; ii++){
-			if (idAndCosine[ii].euclideanDistance<=idAndCosine[kTmp-1].euclideanDistance){ //Check if in k+ neigborhood
+			if (idAndCosine[ii].euclideanDistance<=(idAndCosine[kTmp-1].euclideanDistance+0.000001)){ //Check if in k+ neigborhood
 				neighborMatrix[i][idAndCosine[ii].id]=1; //Add to neighborMatrix
-				kCounter++;
 			}
 			else
 				break;
 		}
+		//Comentary: Why I add a very small number to 'border' euclidean distance?
+		//Because during calculations, two points in the exactly same spot can result with very, very small but non zero euclidean distance!
+		//That's why we need a extra space for such problems
 	}
 
 	/**for(int i=0; i<dataNum; i++){
 		for(int ii=0; ii<dataNum; ii++){
-			cout<<neighborMatrix[(int) data[i][attributeSize+2]][(int) data[ii][attributeSize+2]];
+			cout<<neighborMatrix[(int) data[i][attributeSize+2]][(int) data[ii][attributeSize+2]]<<" ";
 		}
 		cout<<endl;
 	}**/
@@ -232,8 +230,11 @@ int main (int argc, char *arg[]){
 			objectClassTable[i]=CORE;
 		else if ((kn>=k) & (ndf<1))
 			objectClassTable[i]=BORDER;
-		else
+		else{
 			objectClassTable[i]=NOISE;
+			data[i][attributeSize]=0; //0 time counter
+			cout<<'('<<data[i][0]<<','<<data[i][1]<<')'<<endl;
+		}
 	}
 
 	int clasterCount=0; //"When it was clusterized" counter
