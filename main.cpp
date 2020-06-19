@@ -199,13 +199,6 @@ int main (int argc, char *arg[]){
 		//That's why we need a extra space for such problems
 	}
 
-	/**for(int i=0; i<dataNum; i++){
-		for(int ii=0; ii<dataNum; ii++){
-			cout<<neighborMatrix[(int) data[i][attributeSize+2]][(int) data[ii][attributeSize+2]]<<" ";
-		}
-		cout<<endl;
-	}**/
-
 	cout<<"Neighbor matrix completed"<<endl;
 	end = std::chrono::system_clock::now();
 	elapsed_seconds = end-start;
