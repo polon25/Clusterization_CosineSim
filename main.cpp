@@ -47,9 +47,12 @@ int main (int argc, char *arg[]){
 	 * with additional columns for length and cluster ID
 	 */
 
-	float data[dataNum][attributeSize+3];
-	float dataOld[dataNum][attributeSize+3];
+	vector<float*> data;
+	vector<float*> dataOld;
+
 	for(int i=0; i<dataNum; i++){
+		data.push_back(new float[attributeSize+3]);
+		dataOld.push_back(new float[attributeSize+3]);
 		float dataVector[attributeSize];
 		for(int ii=0; ii<attributeSize; ii++){
 			dataVector[ii]=stof(dataRaw[i][ii]);
@@ -86,12 +89,12 @@ int main (int argc, char *arg[]){
 	 */
 
 	//Sorting
-	dataVec dataArray[dataNum];
+	vector<dataVec> dataArray;
 	for(int i=0; i<dataNum;i++){
-		dataArray[i]={data[i],data[i][attributeSize]};
+		dataArray.push_back({data[i],data[i][attributeSize]});
 	}
 	n = sizeof(dataArray)/sizeof(dataArray[0]);
-	sort(dataArray, dataArray+n, compareDistance);
+	sort(dataArray.begin(), dataArray.end(), compareDistance);
 
 	//Writing sorted data to tmp array
 	float dataTmpArray[dataNum][attributeSize+3];
@@ -116,16 +119,20 @@ int main (int argc, char *arg[]){
 
 	//Matrix of neighbors (0 - not neighbor, 1 - neighbor)
 	//First id - neighbors of i-th object, Second id - objects which have i-th element as their neighbor
-	vector<int*> neighborMatrix; //Cause it's to big array to do it the "normal way"
+	typedef vector<int> row_vector;
+	typedef vector<row_vector> matrix_vector;
+	matrix_vector neighborMatrix(dataNum, row_vector(dataNum));
 
-	for (int i=0; i<dataNum; i++){
-		neighborMatrix.push_back(new int[dataNum]);
-		for (int ii=0; ii<dataNum; ii++){
+	for(int i=0; i<dataNum; i++){
+		for(int ii=0; ii<dataNum; ii++){
 			neighborMatrix[i][ii]=0;
 		}
 	}
 
-	int objectClassTable[dataNum]={NOISE};
+	vector<int> objectClassTable;
+	for (int i=0; i<dataNum; i++){
+		objectClassTable.push_back(NOISE);
+	}
 
 	/**
 	 * k+ NBC clusterization using cosine measure
