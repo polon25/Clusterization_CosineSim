@@ -144,34 +144,69 @@ int main (int argc, char *arg[]){
 		 * Two for loops to iterate from ith vector in both directions
 		 */
 
+		float minDistance=999;
+		float maxDistance=0;
+		int neighborCount=0;
+
 		vector<objectInfo> closeVectors; //IDs of close vectors
-		for (int ii=i-1;ii>=0;ii--){
-			if(data[ii][attributeSize]>=data[i][attributeSize]-borderDistance){//If potential close vector
+		for (int ii=1; ii<max(i,dataNum-i); ii++){
+			bool operationDone=false;//Was at least one point added to the neighborhood?
+			if(i+ii<dataNum){ //Iteration 'above' i-th
+				int id=i+ii;
 				float distance=0;
 				for (int iii=0;iii<attributeSize;iii++){
-					float a=data[i][iii]-data[ii][iii];
+					float a=data[i][iii]-data[id][iii];
 					distance+=a*a;
 				}
-				objectInfo object; object.id=ii; object.euclideanDistance=sqrt(distance);
-				closeVectors.push_back(object);
+				distance=sqrt(distance);
+				if(neighborCount<k){ //If not enough neighbors, add to the neighborhood
+					objectInfo object; object.id=id; object.euclideanDistance=distance;
+					closeVectors.push_back(object);
+					if (distance<minDistance){
+						minDistance=distance;
+					}
+					else if (distance>maxDistance){
+						maxDistance=distance;
+					}
+					neighborCount++;
+					operationDone=true;
+				}
+				else if(distance<(maxDistance+0.0001)){ //If enough neighbors, add only if distance is smaller than max
+					objectInfo object; object.id=id; object.euclideanDistance=distance;
+					closeVectors.push_back(object);
+					neighborCount++;
+					operationDone=true;
+				}
 			}
-			else{//Break loop if we exceed boundary
-				break;
-			}
-		}
-		for (int ii=i+1;ii<dataNum;ii++){
-			if(data[ii][attributeSize]<=data[i][attributeSize]+borderDistance){//If potential close vector
+			if (i-ii>=0){//Iteration 'below' i-th
+				int id=i-ii;
 				float distance=0;
 				for (int iii=0;iii<attributeSize;iii++){
-					float a=data[i][iii]-data[ii][iii];
+					float a=data[i][iii]-data[id][iii];
 					distance+=a*a;
 				}
-				objectInfo object; object.id=ii; object.euclideanDistance=sqrt(distance);
-				closeVectors.push_back(object);
+				distance=sqrt(distance);
+				if(neighborCount<k){ //If not enough neighbors, add to the neighborhood
+					objectInfo object; object.id=id; object.euclideanDistance=distance;
+					closeVectors.push_back(object);
+					if (distance<minDistance){
+						minDistance=distance;
+					}
+					else if (distance>maxDistance){
+						maxDistance=distance;
+					}
+					neighborCount++;
+					operationDone=true;
+				}
+				else if(distance<(maxDistance+0.001)){ //If enough neighbors, add only if distance is smaller than max
+					objectInfo object; object.id=id; object.euclideanDistance=distance;
+					closeVectors.push_back(object);
+					neighborCount++;
+					operationDone=true;
+				}
 			}
-			else{//Break loop if we exceed boundary
+			if (!operationDone)//If no object was added to the neighborhood
 				break;
-			}
 		}
 
 		//Sort neighboors by their cosine value
