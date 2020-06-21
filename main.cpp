@@ -2,7 +2,7 @@
 // Name        : main.cpp
 // Author      : Jacek Pi³ka
 // Description : DAMI Project -> clusterization using cosine measure
-// Arguments: filePath, number of header rows, delimiter, epsilon, k, filePathOut
+// Arguments: filePath, number of header rows, delimiter, k, filePathOut
 //============================================================================
 
 #include "data.h"
@@ -22,9 +22,8 @@ int main (int argc, char *arg[]){
 	string filePath=arg[1];
 	int headerRows=atoi(arg[2]); //Number of header lines
 	char delimiter=*arg[3]; //Delimiter char
-	float epsilon=atof(arg[4]); //Epsilon value
-	int k=atoi(arg[5]); //k neighbors
-	string filePathOut=arg[6];
+	int k=atoi(arg[4]); //k neighbors
+	string filePathOut=arg[5];
 
 	/**
 	 * Importing data from file
@@ -32,8 +31,6 @@ int main (int argc, char *arg[]){
 
 	cout<<"Parameters:"<<endl;
 	cout<<"Header's rows: "<<headerRows<<endl;
-	cout<<"Epsilon: "<<epsilon<<endl;
-	float borderDistance=sqrt(2-2*epsilon);
 	cout<<"k:"<<k<<endl<<endl;
 	cout<<"Reading file: "<<filePath<<endl;
 	vector<vector<string>> dataRaw=readData(filePath,headerRows,delimiter);
@@ -144,15 +141,15 @@ int main (int argc, char *arg[]){
 		 * Two for loops to iterate from ith vector in both directions
 		 */
 
-		float minDistance=999;
 		float maxDistance=0;
 		int neighborCount=0;
 
 		vector<objectInfo> closeVectors; //IDs of close vectors
-		for (int ii=1; ii<max(i,dataNum-i); ii++){
+		for (int ii=1; ii<max(i,dataNum-i); ii++){ //Iteration through points from the i-th object
 			bool operationDone=false;//Was at least one point added to the neighborhood?
 			if(i+ii<dataNum){ //Iteration 'above' i-th
 				int id=i+ii;
+				//Calculate euclidean distance
 				float distance=0;
 				for (int iii=0;iii<attributeSize;iii++){
 					float a=data[i][iii]-data[id][iii];
@@ -162,10 +159,7 @@ int main (int argc, char *arg[]){
 				if(neighborCount<k){ //If not enough neighbors, add to the neighborhood
 					objectInfo object; object.id=id; object.euclideanDistance=distance;
 					closeVectors.push_back(object);
-					if (distance<minDistance){
-						minDistance=distance;
-					}
-					else if (distance>maxDistance){
+					if (distance>maxDistance){//Set the max distance
 						maxDistance=distance;
 					}
 					neighborCount++;
@@ -189,16 +183,13 @@ int main (int argc, char *arg[]){
 				if(neighborCount<k){ //If not enough neighbors, add to the neighborhood
 					objectInfo object; object.id=id; object.euclideanDistance=distance;
 					closeVectors.push_back(object);
-					if (distance<minDistance){
-						minDistance=distance;
-					}
-					else if (distance>maxDistance){
+					if (distance>maxDistance){//Set the max distance
 						maxDistance=distance;
 					}
 					neighborCount++;
 					operationDone=true;
 				}
-				else if(distance<(maxDistance+0.001)){ //If enough neighbors, add only if distance is smaller than max
+				else if(distance<(maxDistance+0.0001)){ //If enough neighbors, add only if distance is smaller than max
 					objectInfo object; object.id=id; object.euclideanDistance=distance;
 					closeVectors.push_back(object);
 					neighborCount++;
